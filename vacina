@@ -1,0 +1,124 @@
+import tkinter as tk
+from tkinter import messagebox, simpledialog
+import json
+import os
+
+class CartaoVacina:
+    def __init__(self, master):
+        self.master = master
+        master.title("Cartão de Vacina Digital")
+        master.configure(bg="#f0f0f0")
+
+        # Frame para informações do paciente
+        self.frame_paciente = tk.Frame(master, bg="#f0f0f0")
+        self.frame_paciente.pack(padx=10, pady=10)
+
+        self.label_nome = tk.Label(self.frame_paciente, text="Nome:", bg="#f0f0f0")
+        self.label_nome.grid(row=0, column=0, padx=5, pady=5)
+        self.entry_nome = tk.Entry(self.frame_paciente)
+        self.entry_nome.grid(row=0, column=1, padx=5, pady=5)
+
+        self.label_data_nascimento = tk.Label(self.frame_paciente, text="Data de Nascimento:", bg="#f0f0f0")
+        self.label_data_nascimento.grid(row=1, column=0, padx=5, pady=5)
+        self.entry_data_nascimento = tk.Entry(self.frame_paciente)
+        self.entry_data_nascimento.grid(row=1, column=1, padx=5, pady=5)
+        self.entry_data_nascimento.bind("<KeyRelease>", self.formatar_data)
+
+        self.label_cpf = tk.Label(self.frame_paciente, text="CPF:", bg="#f0f0f0")
+        self.label_cpf.grid(row=2, column=0, padx=5, pady=5)
+        self.entry_cpf = tk.Entry(self.frame_paciente)
+        self.entry_cpf.grid(row=2, column=1, padx=5, pady=5)
+        self.entry_cpf.bind("<KeyRelease>", self.limitar_cpf)
+
+        # Frame para histórico de vacinação
+        self.frame_historico = tk.Frame(master, bg="#f0f0f0")
+        self.frame_historico.pack(padx=10, pady=10)
+
+        self.label_historico = tk.Label(self.frame_historico, text="Histórico de Vacinação:", bg="#f0f0f0")
+        self.label_historico.pack()
+
+        self.listbox_historico = tk.Listbox(self.frame_historico, height=10, width=50)
+        self.listbox_historico.pack(padx=5, pady=5)
+
+        # Frame para botões
+        self.frame_botoes = tk.Frame(master, bg="#f0f0f0")
+        self.frame_botoes.pack(padx=10, pady=10)
+
+
+        self.button_registrar = tk.Button(self.frame_botoes, text="Registrar Vacina", command=self.registrar_vacina)
+        self.button_registrar.grid(row=0, column=1, padx=5, pady=5)
+
+        self.button_limpar = tk.Button(self.frame_botoes, text="Limpar Campos", command=self.limpar_campos)
+        self.button_limpar.grid(row=0, column=2, padx=5, pady=5)
+
+        self.button_salvar = tk.Button(self.frame_botoes, text="Salvar Dados", command=self.salvar_dados)
+        self.button_salvar.grid(row=0, column=3, padx=5, pady=5)
+
+        self.dados_paciente = {}
+
+    def formatar_data(self, event):
+        # Remove todos os caracteres que não são dígitos
+        data = ''.join(filter(str.isdigit, self.entry_data_nascimento.get()))
+        
+        # Formata a data com barras
+        if len(data) >= 2:
+            data = data[:2] + '/' + data[2:]
+        if len(data) >= 5:
+            data = data[:5] + '/' + data[5:]
+
+        # Atualiza o campo de entrada
+        self.entry_data_nascimento.delete(0, tk.END)
+        self.entry_data_nascimento.insert(0, data)
+
+    def limitar_cpf(self, event):
+        # Remove todos os caracteres que não são dígitos
+        cpf = ''.join(filter(str.isdigit, self.entry_cpf.get()))
+        
+        # Limita o CPF a 11 dígitos
+        if len(cpf) > 11:
+            cpf = cpf[:11]
+
+        # Atualiza o campo de entrada
+        self.entry_cpf.delete(0, tk.END)
+        self.entry_cpf.insert(0, cpf)
+
+
+    def registrar_vacina(self):
+        if not self.dados_paciente:
+            messagebox.showwarning("Atenção", "Cadastre um paciente antes de registrar vacinas.")
+            return
+
+        vacina = simpledialog.askstring("Vacina", "Digite o nome da vacina:")
+        if vacina:
+            data_vacina = simpledialog.askstring("Data da Vacina", "Digite a data da vacina (DD/MM/AAAA):")
+            lote = simpledialog.askstring("Lote", "Digite o número do lote:")
+            if data_vacina and lote:
+                registro = f"{vacina} - {data_vacina} - {lote} - {self.dados_paciente['nome']} ({self.dados_paciente['cpf']})"
+                self.listbox_historico.insert(tk.END, registro)
+                self.dados_paciente['historico'].append(registro)
+                messagebox.showinfo("Sucesso", "Vacina registrada com sucesso!")
+            else:
+                messagebox.showwarning("Atenção", "Data da vacina e lote não podem ser vazios.")
+        else:
+            messagebox.showwarning("Atenção", "Nome da vacina não pode ser vazio.")
+
+    def limpar_campos(self):
+        self.entry_nome.delete(0, tk.END)
+        self.entry_data_nascimento.delete(0, tk.END)
+        self.entry_cpf.delete(0, tk.END)
+        self.listbox_historico.delete(0, tk.END)
+        self.dados_paciente = {}
+
+    def salvar_dados(self):
+        if not self.dados_paciente:
+            messagebox.showwarning("Atenção", "Cadastre um paciente antes de salvar os dados.")
+            return
+
+        with open("dados_paciente.json", "w") as arquivo:
+            json.dump(self.dados_paciente, arquivo)
+            messagebox.showinfo("Sucesso", "Dados salvos com sucesso!")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    cartao_vacina = CartaoVacina(root)
+    root.mainloop()
